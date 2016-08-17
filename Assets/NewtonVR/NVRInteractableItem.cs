@@ -30,7 +30,6 @@ namespace NewtonVR
         protected Transform PickupTransform;
         private Vector3 AngularTarget;
         private Vector3 VelocityTarget;
-        private Vector3 OldCenterOfMass;
 
         private bool collidedThisFrame = false;
         private bool sweptThisFrame = false;
