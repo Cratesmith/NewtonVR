@@ -13,14 +13,15 @@ namespace NewtonVR
         private Collider[] Colliders;
         private GameObject PhysicalController;
         private Transform ModelParent;
+        private Transform CollisionParent;
 
-        protected float DropDistance { get { return 1f; } }
+        protected float DropDistance { get { return .25f; } }
         protected Vector3 ClosestHeldPoint;
 
         protected float AttachedRotationMagic = 20f;
         protected float AttachedPositionMagic = 3000f;
 
-        public void Initialize(NVRHand trackingHand, bool initialState)
+        public void Initialize(NVRHand trackingHand, bool initialState, GameObject customModel)
         {
             Hand = trackingHand;
 
@@ -47,62 +48,86 @@ namespace NewtonVR
             PhysicalController.transform.rotation = Hand.transform.rotation;
             PhysicalController.transform.localScale = Hand.transform.localScale;
 
-            string controllerModel = Hand.GetDeviceName();
-            switch (controllerModel)
+            //if (customModel == null)
             {
-                case "vr_controller_05_wireless_b":
-                    Transform dk1Trackhat = ModelParent.transform.Find("trackhat");
-                    Collider dk1TrackhatCollider = dk1Trackhat.gameObject.GetComponent<BoxCollider>();
-                    if (dk1TrackhatCollider == null)
-                        dk1TrackhatCollider = dk1Trackhat.gameObject.AddComponent<BoxCollider>();
+                string controllerModel = Hand.GetDeviceName();
+                switch (controllerModel)
+                {
+                    case "vr_controller_05_wireless_b":
+                        Transform dk1Trackhat = ModelParent.transform.Find("trackhat");
+                        Collider dk1TrackhatCollider = dk1Trackhat.gameObject.GetComponent<BoxCollider>();
+                        if (dk1TrackhatCollider == null)
+                            dk1TrackhatCollider = dk1Trackhat.gameObject.AddComponent<BoxCollider>();
 
-                    Transform dk1Body = ModelParent.transform.Find("body");
-                    Collider dk1BodyCollider = dk1Body.gameObject.GetComponent<BoxCollider>();
-                    if (dk1BodyCollider == null)
-                        dk1BodyCollider = dk1Body.gameObject.AddComponent<BoxCollider>();
+                        Transform dk1Body = ModelParent.transform.Find("body");
+                        Collider dk1BodyCollider = dk1Body.gameObject.GetComponent<BoxCollider>();
+                        if (dk1BodyCollider == null)
+                            dk1BodyCollider = dk1Body.gameObject.AddComponent<BoxCollider>();
 
-                    Colliders = new Collider[] { dk1TrackhatCollider, dk1BodyCollider };
-                    break;
+                        Colliders = new Collider[] {dk1TrackhatCollider, dk1BodyCollider};
+                        break;
 
-                case "vr_controller_vive_1_5":
-                    Transform dk2TrackhatColliders = ModelParent.transform.FindChild("VivePreColliders");
-                    if (dk2TrackhatColliders == null)
-                    {
-                        dk2TrackhatColliders = GameObject.Instantiate(Resources.Load<GameObject>("VivePreColliders")).transform;
-                        dk2TrackhatColliders.parent = ModelParent.transform;
-                        dk2TrackhatColliders.localPosition = Vector3.zero;
-                        dk2TrackhatColliders.localRotation = Quaternion.identity;
-                        dk2TrackhatColliders.localScale = Vector3.one;
-                    }
+                    case "vr_controller_vive_1_5":
+                        Transform dk2TrackhatColliders = ModelParent.transform.FindChild("VivePreColliders");
+                        if (dk2TrackhatColliders == null)
+                        {
+                            dk2TrackhatColliders =
+                                GameObject.Instantiate(Resources.Load<GameObject>("VivePreColliders")).transform;
+                            dk2TrackhatColliders.parent = ModelParent.transform;
+                            dk2TrackhatColliders.localPosition = Vector3.zero;
+                            dk2TrackhatColliders.localRotation = Quaternion.identity;
+                            dk2TrackhatColliders.localScale = Vector3.one;
+                        }
 
-                    Colliders = dk2TrackhatColliders.GetComponentsInChildren<Collider>();
-                    break;
+                        Colliders = dk2TrackhatColliders.GetComponentsInChildren<Collider>();
+                        break;
 
-                case "Custom":
-                    Transform customCollidersTransform = PhysicalController.transform.FindChild("VivePreColliders");
-                    if (customCollidersTransform == null)
-                    {
-                        GameObject customColliders = GameObject.Instantiate(Hand.CustomPhysicalColliders);
-                        customColliders.name = "CustomColliders";
-                        customCollidersTransform = customColliders.transform;
+                    case "Custom":
+                        Transform customCollidersTransform = PhysicalController.transform.FindChild("VivePreColliders");
+                        if (customCollidersTransform == null)
+                        {
+                            GameObject customColliders = GameObject.Instantiate(Hand.CustomPhysicalColliders);
+                            customColliders.name = "CustomColliders";
+                            customCollidersTransform = customColliders.transform;
 
-                        customCollidersTransform.parent = PhysicalController.transform;
-                        customCollidersTransform.localPosition = Vector3.zero;
-                        customCollidersTransform.localRotation = Quaternion.identity;
-                        customCollidersTransform.localScale = Vector3.one;
-                    }
+                            customCollidersTransform.parent = PhysicalController.transform;
+                            customCollidersTransform.localPosition = Vector3.zero;
+                            customCollidersTransform.localRotation = Quaternion.identity;
+                            customCollidersTransform.localScale = Vector3.one;
+                        }
 
-                    Colliders = customCollidersTransform.GetComponentsInChildren<Collider>();
-                    break;
+                        Colliders = customCollidersTransform.GetComponentsInChildren<Collider>();
+                        break;
 
-                default:
-                    Debug.LogError("Error. Unsupported device type: " + controllerModel);
-                    break;
+                    default:
+                        Debug.LogError("Error. Unsupported device type: " + controllerModel);
+                        break;
+                }
             }
+            //else
+            {
+                //GameObject.DestroyImmediate(ModelParent.gameObject);
+
+                GameObject CustomModelObject = GameObject.Instantiate(customModel);
+                CustomModelObject.transform.parent = PhysicalController.transform;
+                //CustomModelObject.transform.localScale = Vector3.one;
+                CustomModelObject.transform.localPosition = Vector3.zero;
+                CustomModelObject.transform.localRotation = Quaternion.identity;
+
+                ModelParent.parent = CustomModelObject.transform;
+
+                Colliders = CustomModelObject.GetComponentsInChildren<Collider>(); //note: these should be trigger colliders
+
+                ModelParent = CustomModelObject.transform;
+            }
+
+//            CollisionParent = GameObject.Instantiate(ModelParent.gameObject).transform;
+//            var modelColliders = ModelParent.transform.position.
 
             Rigidbody = PhysicalController.GetComponent<Rigidbody>();
             Rigidbody.isKinematic = false;
             Rigidbody.maxAngularVelocity = float.MaxValue;
+            Rigidbody.freezeRotation = true;
 
             Renderer[] renderers = PhysicalController.GetComponentsInChildren<Renderer>();
             for (int index = 0; index < renderers.Length; index++)
@@ -154,7 +179,11 @@ namespace NewtonVR
             if (angle > 180)
                 angle -= 360;
 
-            if (angle != 0)
+            if (Rigidbody.freezeRotation)
+            {
+                Rigidbody.MoveRotation(Hand.transform.rotation);
+            }
+            else if (angle != 0)
             {
                 Vector3 AngularTarget = angle * axis;
                 this.Rigidbody.angularVelocity = AngularTarget;

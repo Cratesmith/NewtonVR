@@ -79,6 +79,16 @@ namespace NewtonVR
             }
         }
 
+        public Quaternion GetReferenceRotation(NVRHandReferenceSpace eRefSpace)
+        {
+            switch (eRefSpace)
+            {
+                case NVRHandReferenceSpace.FingerPoint: return Quaternion.Euler(-30,0,0);
+
+                //case NVRHandReferenceSpace.HandGrip:
+                default: return Quaternion.identity;
+            }
+        }
 
         protected virtual void Awake()
         {
@@ -574,7 +584,7 @@ namespace NewtonVR
                     for (int index = 0; index < GhostColliders.Length; index++)
                     {
                         GhostColliders[index].enabled = false;
-                    }
+                    }                    
                 }
             }
 
@@ -688,7 +698,7 @@ namespace NewtonVR
                 }
 
                 PhysicalController = this.gameObject.AddComponent<NVRPhysicalController>();
-                PhysicalController.Initialize(this, false);
+                PhysicalController.Initialize(this, false, CustomPhysicalColliders);
 
                 Color transparentcolor = Color.white;
                 transparentcolor.a = (float)VisibilityLevel.Ghost / 100f;
